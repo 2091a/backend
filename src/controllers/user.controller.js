@@ -3,10 +3,10 @@ import { ApiError } from "../utils/apiError.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-
+import jwt from "jsonwebtoken"
 const genrateAccessAndRefereshTokens = async(userId)=>{
   try {
-    const user = await findById(userId)
+    const user = await User.findById(userId)
    const accessToken =  user.genrateAccessToken()
     const refreshToken = user.genrateRefreshToken()
 
@@ -105,7 +105,7 @@ const loginUser = asyncHandler(async(req,res)=>{
 
   const {email,userName,password} = req.body
 
-  if(!email||!userName){
+  if(!(email||userName)){
     throw new ApiError(400,"User name or email is required ")
   }
 
@@ -175,7 +175,49 @@ const logOutUser = asyncHandler(async(req,res)=>{
   )
 })
 
+const refereshAccessToken = asyncHandler (async(req,res)=>{
+  const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken 
+
+  if(!incomingRefreshToken){
+    throw new ApiError(401,"unauthorized request")
+  }
+  try {
+    const decodedToken = jwt.verify(incomingRefreshToken,process.env.Refresh_Token_Secret)
+    const user = await User.findById(decodedToken?._id)
+    
+    if(!user){
+      throw new ApiError(401,"Invalid refresh token")
+    }
+  
+    if(incomingRefreshToken !== user?.refreshToken){
+      throw new ApiError(401,"Refresh tokn is expired or used")
+    }
+    const options={
+      httpOnly:true,
+      secure:true
+    }
+    const {accessToken,newRefreshToken} = await genrateAccessAndRefereshTokens(user._id)
+  
+    return res
+    .status(200)
+    .cookies("accessToken",accessToken,options)
+    .cookies("refreshToken",newRefreshToken,options)
+    .json(
+      new ApiResponse(
+        200,
+        {accessToken,refreshToken:newRefreshToken},
+        "Access token refreshed successfully"
+  
+      )
+    )
+  } catch (error) {
+    throw new ApiError(401,error.message || "Invalid refresh token")
+  }
+})
+
+
 export {registerUser,
   loginUser,
-  logOutUser
+  logOutUser,
+  refereshAccessToken
 }

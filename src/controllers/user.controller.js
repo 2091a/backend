@@ -103,8 +103,9 @@ const loginUser = asyncHandler(async(req,res)=>{
   // check password 
   //acces and refresh token genrate 
   //send cookie
-
-  const {email,userName,password} = req.body
+ console.log(req.body);
+  const {email, userName, password} = req.body
+ 
 
   if(!(email||userName)){
     throw new ApiError(400,"User name or email is required ")
@@ -230,15 +231,18 @@ const changeCurrentPassword = asyncHandler(async(req,res)=>{
 
   return res
   .status(200)
-  .json(
-    new ApiResponse(200,{},"Password saved successfully")
-  )
+  .json(new ApiResponse(200,{},"Password saved successfully"))
 
 })
 
 const getCurrentUser = asyncHandler(async(req,res)=>{
+  console.log(req.user);
   return res.status(200)
-  .json(200,req.user,"current user fetched successfully")
+  .json(new ApiResponse(
+    200,
+    req.user,
+    "current user fetched successfully"
+  ))
 })
 
 const updateAccountDetails = asyncHandler(async(req,res)=>{
@@ -263,7 +267,7 @@ const updateAccountDetails = asyncHandler(async(req,res)=>{
   .json(200,user,"Accounts details updated Successfully")
 })
 
-const updateUserAvatar = asyncHandler(async(res,res)=>{
+const updateUserAvatar = asyncHandler(async(req,res)=>{
   const avatarLocalPath = req.file?.path
   if(!avatarLocalPath){
     throw new ApiError(400,"Avatar file is missing")
@@ -274,17 +278,22 @@ const updateUserAvatar = asyncHandler(async(res,res)=>{
      throw new ApiError(400,"Error while uploding on avatar")
   }
 
-  const user = User.findByIdAndDelete(req.user?._id,
+  const oldAvatarCloudinary = req.user.avatar;
+  console.log(oldAvatarCloudinary);
+
+  const user = User.findByIdAndUpdate(req.user?._id,
     {
       $set:{ avatar:avatar.url}
     },{new:true}
   ).select("-password -refreshToken")
 
    return res.status(200)
-  .json(200,user,"avatar image updated successfully")
+  .json(new ApiResponse(
+    200,user,"avatar image updated successfully"
+  ))
 })
 
-const updateUserCoverImage = asyncHandler(async(res,res)=>{
+const updateUserCoverImage = asyncHandler(async(req,res)=>{
   const coverImageLocalPath = req.file?.path
   if(!coverImageLocalPath){
     throw new ApiError(400,"Cover Image file is missing")

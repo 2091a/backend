@@ -5,6 +5,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
 import mongoose from "mongoose";
+import {v2 as cloudinary} from "cloudinary"
 const genrateAccessAndRefereshTokens = async(userId)=>{
   try {
     const user = await User.findById(userId)
@@ -73,6 +74,7 @@ const registerUser = asyncHandler(async (req,res)=>{
   const user = await User.create({
     fullName,
     avatar:avatar.url,
+    avatarPublicID:avatar.public_id,
     coverImage: coverImage?.url || "",
     email,
     password,
@@ -240,7 +242,7 @@ const getCurrentUser = asyncHandler(async(req,res)=>{
   return res.status(200)
   .json(new ApiResponse(
     200,
-    req.user,
+    await req.user,
     "current user fetched successfully"
   ))
 })
@@ -277,15 +279,26 @@ const updateUserAvatar = asyncHandler(async(req,res)=>{
   if(!avatar.url){
      throw new ApiError(400,"Error while uploding on avatar")
   }
+  
+  console.log(req.user);
+ 
+   const oldAvatarPublicId = req.user?.avatarPublicID
 
-  const oldAvatarCloudinary = req.user.avatar;
-  console.log(oldAvatarCloudinary);
 
-  const user = User.findByIdAndUpdate(req.user?._id,
+  const user = await User.findByIdAndUpdate(req.user?._id,
     {
-      $set:{ avatar:avatar.url}
+      $set:{ avatar:avatar.url,
+       avatarPublicID: avatar.public_id
+      }
     },{new:true}
-  ).select("-password -refreshToken")
+  ).select("-password ")
+
+     
+   try {
+    await cloudinary.uploader.destroy(oldAvatarPublicId);
+   } catch (error) {
+        throw new ApiError(501,error.message);
+   }
 
    return res.status(200)
   .json(new ApiResponse(

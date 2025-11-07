@@ -27,7 +27,11 @@ const userSchema = new Schema(
         },
         avatar:{
             type:String, 
-            required: true,
+            required: true
+        },
+        avatarPublicID:{
+            type:String,
+            required: true
         },
         coverImage:{
             type:String

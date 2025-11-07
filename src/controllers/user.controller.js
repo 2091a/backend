@@ -1,11 +1,10 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/apiError.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { deleteAvatarFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
 import mongoose from "mongoose";
-import {v2 as cloudinary} from "cloudinary"
 const genrateAccessAndRefereshTokens = async(userId)=>{
   try {
     const user = await User.findById(userId)
@@ -293,12 +292,7 @@ const updateUserAvatar = asyncHandler(async(req,res)=>{
     },{new:true}
   ).select("-password ")
 
-     
-   try {
-    await cloudinary.uploader.destroy(oldAvatarPublicId);
-   } catch (error) {
-        throw new ApiError(501,error.message);
-   }
+   await deleteAvatarFromCloudinary(oldAvatarPublicId)
 
    return res.status(200)
   .json(new ApiResponse(

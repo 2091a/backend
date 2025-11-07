@@ -24,4 +24,15 @@ import fs from "fs"
         }
     }
 
-export {uploadOnCloudinary}
+    const deleteAvatarFromCloudinary = async (avatarPublicID)=>{
+          
+   try {
+    await cloudinary.uploader.destroy(avatarPublicID);
+   } catch (error) {
+        throw new ApiError(501,error.message);
+   }
+    }
+
+export {uploadOnCloudinary
+    ,deleteAvatarFromCloudinary
+}

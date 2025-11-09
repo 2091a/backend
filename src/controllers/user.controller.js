@@ -158,8 +158,8 @@ const logOutUser = asyncHandler(async(req,res)=>{
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set:{
-        refreshToken: undefined
+      $unset:{
+        refreshToken: 1 // this remove the file from document
       }
     },
     {
@@ -328,23 +328,22 @@ const getUserChannelProfile = asyncHandler(async(req,res)=>{
   }
 
   const channel = await User.aggregate([
-    {
-      $match:{
-        username:username?.toLowerCase()
-      },
-      $lookup:{
+      {$match:{
+        userName:username?.toLowerCase()
+      }},
+      {$lookup:{
         from:"subscriptions",
         localField:"_id",
         foreignField:"channel",
         as:"subscribers"
-      },
-      $lookup:{
+      }},
+     { $lookup:{
         from:"subscriptions",
         localField:"_id",
         foreignField:"subscriber",
         as:"subscribedTo"
-      },
-      $addFields:{
+      }},
+     { $addFields:{
         subscribersCount:{
           $size:"$subscribers"
         },
@@ -359,9 +358,9 @@ const getUserChannelProfile = asyncHandler(async(req,res)=>{
         }
       }
 
-      }
+      }}
       
-    },
+    ,
       {
         $project:{
           fullName:1,
